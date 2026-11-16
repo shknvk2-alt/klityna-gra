@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Гра: Будова і функції клітини</title>
+<style>
+:root{
+  --kimi-font-sans: system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --kimi-color-text-primary:#1a1a1a;
+  --kimi-color-text-secondary:#4b4b4b;
+  --kimi-color-text-tertiary:#8a8a8a;
+  --kimi-color-text-quaternary:#b0b0b0;
+  --kimi-color-surface:#ffffff;
+  --kimi-color-surface-muted:#f2f2f2;
+  --kimi-color-surface-raised:#ffffff;
+  --kimi-color-border:#dcdcdc;
+  --kimi-color-danger:#e5484d;
+  --kimi-color-positive:#30a46c;
+  --kimi-color-warning:#f5a524;
+  --kimi-color-accent:#3b82f6;
+  --kimi-chart-1:#3b82f6;
+  --kimi-chart-2:#ef4444;
+  --kimi-chart-3:#22a356;
+  --kimi-chart-4:#8b5cf6;
+  --kimi-chart-5:#9ca3af;
+  --t-micro:60ms; --t-fast:120ms; --t-normal:200ms; --t-slow:300ms;
+  --ease-out:cubic-bezier(.22,1,.36,1); --ease-in:cubic-bezier(.55,0,.55,.2); --ease-standard:cubic-bezier(.4,0,.2,1);
+}
+body{background:#fafafa;padding:16px;font-family:var(--kimi-font-sans);color:var(--kimi-color-text-primary);margin:0}
+button,input,select,textarea{font:inherit}
+</style>
+</head>
+<body>
+<div id="cellgame" style="font-family: var(--kimi-font-sans); color: var(--kimi-color-text-primary); max-width:1000px;margin:0 auto;">
+  <style>
+    #cellgame .hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    #cellgame h3{margin:0;font-size:17px;font-weight:500;line-height:1.3}
+    #cellgame .sub{font-size:13px;color:var(--kimi-color-text-tertiary);margin:2px 0 0}
+    #cellgame .score{margin-left:auto;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
+    #cellgame .pbar{width:120px;height:6px;border-radius:4px;background:var(--kimi-color-surface-muted);overflow:hidden}
+    #cellgame .pfill{height:100%;width:0%;background:var(--kimi-color-text-primary);transition:width var(--t-normal) var(--ease-out)}
+    #cellgame .btn{border:1px solid var(--kimi-color-border);background:var(--kimi-color-surface);color:var(--kimi-color-text-primary);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;transition:background var(--t-fast)}
+    #cellgame .btn:hover{background:var(--kimi-color-surface-muted)}
+    #cellgame .board{display:grid;grid-template-columns:150px repeat(3,1fr);gap:8px;align-items:start}
+    #cellgame .parts{display:flex;flex-direction:column;gap:6px}
+    #cellgame .sec-h{font-size:12px;font-weight:500;color:var(--kimi-color-text-secondary);padding:8px 8px 4px;border-bottom:1px solid var(--kimi-color-border);margin-bottom:8px;position:sticky;top:0;background:transparent}
+    #cellgame .col{display:flex;flex-direction:column;gap:6px}
+    #cellgame .chip{padding:7px 10px;border:1px solid var(--kimi-color-border);border-radius:10px;background:var(--kimi-color-surface);font-size:12.5px;font-weight:500;cursor:grab;user-select:none;transition:border-color var(--t-fast),box-shadow var(--t-fast)}
+    #cellgame .chip:hover{border-color:var(--kimi-color-text-primary)}
+    #cellgame .chip.sel{border-color:var(--kimi-color-text-primary);box-shadow:0 0 0 2px var(--kimi-color-surface),0 0 0 3px var(--kimi-color-text-primary)}
+    #cellgame .chip.ghost{opacity:.35}
+    #cellgame .blk{border:1px solid var(--kimi-color-border);border-radius:10px;padding:8px;background:var(--kimi-color-surface);transition:border-color var(--t-fast)}
+    #cellgame .blk.over{border-color:var(--kimi-color-text-primary)}
+    #cellgame .blk.done{border-color:var(--kimi-color-positive);background:color-mix(in srgb, var(--kimi-color-positive) 8%, transparent)}
+    #cellgame .slot{display:flex;align-items:center;gap:6px;min-height:26px;border:1px dashed var(--kimi-color-border);border-radius:6px;padding:3px 8px;font-size:12px;color:var(--kimi-color-text-quaternary);margin-bottom:6px;transition:border-color var(--t-fast),color var(--t-fast)}
+    #cellgame .blk.over .slot{border-color:var(--kimi-color-text-primary);color:var(--kimi-color-text-primary)}
+    #cellgame .blk.done .slot{border-style:solid;border-color:var(--kimi-color-positive);color:var(--kimi-color-text-primary);font-weight:500;background:color-mix(in srgb, var(--kimi-color-positive) 14%, transparent)}
+    #cellgame .txt{font-size:12px;line-height:1.45;color:var(--kimi-color-text-secondary)}
+    #cellgame .imgw{display:flex;justify-content:center;padding:4px 0 2px}
+    @keyframes cgshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+    #cellgame .shake{animation:cgshake .18s var(--ease-standard) 2;border-color:var(--kimi-color-danger)!important}
+    #cellgame .win{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;border:1px solid var(--kimi-color-positive);background:color-mix(in srgb, var(--kimi-color-positive) 10%, transparent)}
+    #cellgame .win.show{display:block}
+    @media(max-width:680px){#cellgame .board{grid-template-columns:120px repeat(3,1fr)}#cellgame .txt{font-size:11px}}
+  </style>
+
+  <div class="hdr">
+    <div>
+      <h3>Будова і функції клітини</h3>
+      <p class="sub">Перетягни назву органели до її функції, будови та зображення (або клацни назву, потім — блок).</p>
+    </div>
+    <div class="score" id="cgScore">0 / 18</div>
+    <div class="pbar"><div class="pfill" id="cgFill"></div></div>
+    <button class="btn" id="cgReset">Скинути</button>
+  </div>
+
+  <div class="board" id="cgBoard"></div>
+  <div class="win" id="cgWin">Вітаємо! Усі 18 елементів клітини правильно поєднано з їх функціями, будовою та зображеннями.</div>
+
+<script>
+(function(){
+var ICONS={
+ nucleus:'<circle cx="20" cy="14" r="11" fill="color-mix(in srgb, var(--kimi-chart-1) 18%, transparent)" stroke="var(--kimi-chart-1)" stroke-width="1.5"/><circle cx="20" cy="14" r="4" fill="var(--kimi-chart-1)"/><circle cx="11" cy="10" r="1.2" fill="var(--kimi-chart-1)"/><circle cx="29" cy="10" r="1.2" fill="var(--kimi-chart-1)"/><circle cx="20" cy="25" r="1.2" fill="var(--kimi-chart-1)"/>',
+ mitochondria:'<ellipse cx="20" cy="14" rx="14" ry="8.5" fill="color-mix(in srgb, var(--kimi-chart-2) 16%, transparent)" stroke="var(--kimi-chart-2)" stroke-width="1.5"/><path d="M10 12 Q13 15 16 12 T22 12 T28 12 T34 14" fill="none" stroke="var(--kimi-chart-2)" stroke-width="1.4"/>',
+ chloroplast:'<ellipse cx="20" cy="14" rx="15" ry="8.5" fill="color-mix(in srgb, var(--kimi-chart-3) 18%, transparent)" stroke="var(--kimi-chart-3)" stroke-width="1.5"/><rect x="13" y="9.5" width="3" height="9" rx="1.5" fill="var(--kimi-chart-3)"/><rect x="18.5" y="9.5" width="3" height="9" rx="1.5" fill="var(--kimi-chart-3)"/><rect x="24" y="9.5" width="3" height="9" rx="1.5" fill="var(--kimi-chart-3)"/>',
+ membrane:'<line x1="5" y1="9" x2="35" y2="9" stroke="var(--kimi-chart-4)" stroke-width="1.6"/><line x1="5" y1="19" x2="35" y2="19" stroke="var(--kimi-chart-4)" stroke-width="1.6"/><circle cx="13" cy="14" r="3.4" fill="var(--kimi-chart-4)" opacity=".85"/><circle cx="27" cy="14" r="3.4" fill="var(--kimi-chart-4)" opacity=".85"/>',
+ wall:'<rect x="6" y="5" width="28" height="18" rx="2" fill="none" stroke="var(--kimi-chart-5)" stroke-width="1.5"/><path d="M6 11h28M6 17h28M13 5v18M20 5v18M27 5v18" stroke="var(--kimi-chart-5)" stroke-width="1" opacity=".7"/>',
+ vacuole:'<circle cx="20" cy="14" r="11" fill="color-mix(in srgb, var(--kimi-chart-1) 14%, transparent)" stroke="var(--kimi-chart-1)" stroke-width="1.5"/><circle cx="16" cy="12" r="1.3" fill="var(--kimi-chart-1)"/><circle cx="23" cy="16" r="1.3" fill="var(--kimi-chart-1)"/><circle cx="21" cy="10" r="1.3" fill="var(--kimi-chart-1)"/>',
+ golgi:'<path d="M8 8 Q20 5 32 8" fill="none" stroke="var(--kimi-chart-2)" stroke-width="1.6"/><path d="M8 14 Q20 11 32 14" fill="none" stroke="var(--kimi-chart-2)" stroke-width="1.6"/><path d="M8 20 Q20 17 32 20" fill="none" stroke="var(--kimi-chart-2)" stroke-width="1.6"/><circle cx="32" cy="23" r="1.6" fill="var(--kimi-chart-2)"/><circle cx="28" cy="24.5" r="1.4" fill="var(--kimi-chart-2)"/>',
+ ribosome:'<circle cx="17" cy="15" r="7" fill="color-mix(in srgb, var(--kimi-chart-4) 25%, transparent)" stroke="var(--kimi-chart-4)" stroke-width="1.5"/><circle cx="26" cy="10" r="4.5" fill="var(--kimi-chart-4)" stroke="var(--kimi-chart-4)" stroke-width="1.5"/>',
+ lysosome:'<circle cx="20" cy="14" r="10" fill="color-mix(in srgb, var(--kimi-chart-5) 20%, transparent)" stroke="var(--kimi-chart-5)" stroke-width="1.5"/><circle cx="16" cy="12" r="1.4" fill="var(--kimi-chart-5)"/><circle cx="23" cy="11" r="1.4" fill="var(--kimi-chart-5)"/><circle cx="24" cy="17" r="1.4" fill="var(--kimi-chart-5)"/><circle cx="17" cy="18" r="1.4" fill="var(--kimi-chart-5)"/>',
+ chromoplast:'<ellipse cx="20" cy="14" rx="15" ry="8.5" fill="color-mix(in srgb, var(--kimi-chart-2) 16%, transparent)" stroke="var(--kimi-chart-2)" stroke-width="1.5"/><circle cx="15" cy="12" r="2.2" fill="var(--kimi-chart-2)"/><circle cx="22" cy="16" r="2.2" fill="var(--kimi-chart-2)"/><circle cx="26" cy="10" r="2.2" fill="var(--kimi-chart-2)"/>',
+ leukoplast:'<ellipse cx="20" cy="14" rx="15" ry="8.5" fill="none" stroke="var(--kimi-chart-5)" stroke-width="1.5"/><circle cx="15" cy="12" r="2.6" fill="var(--kimi-color-surface-raised)" stroke="var(--kimi-chart-5)" stroke-width="1.2"/><circle cx="23" cy="15" r="2.6" fill="var(--kimi-color-surface-raised)" stroke="var(--kimi-chart-5)" stroke-width="1.2"/>',
+ centrosome:'<rect x="11" y="7" width="18" height="6.5" rx="3" fill="color-mix(in srgb, var(--kimi-chart-1) 20%, transparent)" stroke="var(--kimi-chart-1)" stroke-width="1.4"/><rect x="17" y="12" width="6.5" height="13" rx="3" fill="color-mix(in srgb, var(--kimi-chart-1) 20%, transparent)" stroke="var(--kimi-chart-1)" stroke-width="1.4"/>',
+ epsSmooth:'<path d="M5 9 C11 5 15 13 21 9 S31 13 35 9" fill="none" stroke="var(--kimi-chart-3)" stroke-width="1.8"/><path d="M5 17 C11 13 15 21 21 17 S31 21 35 17" fill="none" stroke="var(--kimi-chart-3)" stroke-width="1.8"/>',
+ epsRough:'<path d="M5 9 C11 5 15 13 21 9 S31 13 35 9" fill="none" stroke="var(--kimi-chart-3)" stroke-width="1.8"/><path d="M5 19 C11 15 15 23 21 19 S31 23 35 19" fill="none" stroke="var(--kimi-chart-3)" stroke-width="1.8"/><circle cx="10" cy="13" r="1.6" fill="var(--kimi-chart-4)"/><circle cx="18" cy="16" r="1.6" fill="var(--kimi-chart-4)"/><circle cx="26" cy="13" r="1.6" fill="var(--kimi-chart-4)"/>',
+ glycocalyx:'<line x1="5" y1="18" x2="35" y2="18" stroke="var(--kimi-chart-4)" stroke-width="1.6"/><path d="M8 18 Q8 13 10 12 M14 18 Q14 12 16 11 M20 18 Q20 12 22 11 M26 18 Q26 12 28 11 M32 18 Q32 13 34 12" fill="none" stroke="var(--kimi-chart-4)" stroke-width="1.2" opacity=".8"/>',
+ cytoskeleton:'<path d="M6 22 L34 8 M6 14 L34 22 M6 8 L26 24" stroke="var(--kimi-chart-1)" stroke-width="1.2" opacity=".75"/><circle cx="14" cy="16" r="2" fill="color-mix(in srgb, var(--kimi-chart-1) 30%, transparent)" stroke="var(--kimi-chart-1)" stroke-width="1.2"/><circle cx="24" cy="12" r="2" fill="color-mix(in srgb, var(--kimi-chart-1) 30%, transparent)" stroke="var(--kimi-chart-1)" stroke-width="1.2"/>',
+ nutrients:'<circle cx="13" cy="11" r="3" fill="color-mix(in srgb, var(--kimi-chart-2) 30%, transparent)" stroke="var(--kimi-chart-2)" stroke-width="1.3"/><circle cx="25" cy="9" r="2.2" fill="color-mix(in srgb, var(--kimi-chart-2) 30%, transparent)" stroke="var(--kimi-chart-2)" stroke-width="1.3"/><circle cx="20" cy="18" r="3.4" fill="color-mix(in srgb, var(--kimi-chart-2) 30%, transparent)" stroke="var(--kimi-chart-2)" stroke-width="1.3"/><circle cx="30" cy="18" r="1.8" fill="var(--kimi-chart-2)"/>',
+ chromosome:'<path d="M17 5 C22 9 18 12 20 14 C22 16 18 19 23 23 M23 5 C18 9 22 12 20 14 C18 16 22 19 17 23" fill="none" stroke="var(--kimi-chart-4)" stroke-width="1.8"/><circle cx="20" cy="14" r="2" fill="var(--kimi-chart-4)"/>'
+};
+var ORG=[
+ {id:'nucleus',name:'Ядро',fn:'Керує всією життєдіяльністю клітини; зберігає спадкову інформацію (ДНК).',st:'Оточене подвійною ядерною оболонкою з порами; містить хроматин та ядришко.'},
+ {id:'mitochondria',name:'Мітохондрія',fn:'«Енергетична станція» клітини: клітинне дихання та утворення АТФ.',st:'Дві мембрани; внутрішня утворює складки — кристи; має власну ДНК.'},
+ {id:'chloroplast',name:'Хлоропласт',fn:'Здійснює фотосинтез: перетворює енергію світла на енергію хімічних зв’язків.',st:'Дві мембрани; всередині — стопки тилакоїдів (грани) з хлорофілом; власна ДНК.'},
+ {id:'membrane',name:'Клітинна мембрана',fn:'Оточує клітину, відмежовує її від середовища та регулює транспорт речовин.',st:'Фосфоліпідний бішар із зануреними білками; проникна вибірково.'},
+ {id:'wall',name:'Клітинна стінка',fn:'Надає клітині форми й захищає її (є у рослин, грибів і бактерій).',st:'Щільна пориста оболонка з целюлози; розташована ззовні від мембрани.'},
+ {id:'vacuole',name:'Вакуоль',fn:'Накопичує воду, солі та поживні речовини; підтримує клітинний тиск (тургор).',st:'Мембранний міхур (тонопласт); у зрілих рослинних клітинах — до 90% обсягу.'},
+ {id:'golgi',name:'Апарат Гольджі',fn:'Сортує, «пакує» та транспортує білки й ліпіди; бере участь в утворенні лізосом.',st:'Пакети сплощених мембранних цистерн з пухирцями по краях.'},
+ {id:'ribosome',name:'Рибосоми',fn:'Здійснюють синтез білка за інформацією, закладеною в молекулах РНК.',st:'Дві субодиниці з рибосомної РНК та білків; бувають вільні або на мембранах ЕПС.'},
+ {id:'lysosome',name:'Лізосоми',fn:'Перетравлюють старі органели, віруси та чужорідні частинки всередині клітини.',st:'Одинарна мембрана; всередині — травні ферменти-гідролази. У клітинах рослин функції виконує вакуоль.'},
+ {id:'chromoplast',name:'Хромопласт',fn:'Надає плодам, пелюсткам та осінньому листку жовте, помаранчеве й червоне забарвлення.',st:'Пластида з подвійною мембраною; пігменти-каротиноїди (вітамін A) у пластоглобулах.'},
+ {id:'leukoplast',name:'Лейкопласт',fn:'Запасає поживні речовини — крохмаль, білки, жири — у клітинах органів запасання.',st:'Безбарвна пластида з подвійною мембраною; крохмалеві зерна утворюються в пластоглобулях.'},
+ {id:'centrosome',name:'Клітинний центр',fn:'Організує поділ клітини: формує веретено поділу з мікротрубочок.',st:'Два циліндричні центріолі, розташовані перпендикулярно; кожен — циліндр із мікротрубочок.'},
+ {id:'epsSmooth',name:'ЕПС гладка',fn:'Синтезує ліпіди та стероїди, детоксикує шкідливі речовини (у печінці).',st:'Мережа гладких мембранних трубочок та цистерн без рибосом на поверхні.'},
+ {id:'epsRough',name:'ЕПС шорстка',fn:'Синтезує білки та транспортує їх до апарату Гольджі.',st:'Мембранні цистерни; зовнішня поверхня вкрита рибосомами (тому й «шорстка»).'},
+ {id:'glycocalyx',name:'Глікокалікс',fn:'Захищає клітину, забезпечує розпізнавання «свій–чужий» і прикріплення клітин.',st:'Шар полісахаридів на зовнішній поверхні плазматичної мембрани; добре виражений в епітелії кишечника.'},
+ {id:'cytoskeleton',name:'Цитоскелет',fn:'Підтримує форму клітини, забезпечує рух органел і поділ клітини.',st:'Білкові структури: мікротрубочки, мікрофіламенти та проміжні філаменти.'},
+ {id:'nutrients',name:'Поживні речовини',fn:'Запасаються у клітині як джерело енергії та будівельний матеріал (крохмаль, жири, білки).',st:'Включення в цитоплазмі: зерна (крохмаль), краплі (жири), кристали (солі), глікоген.'},
+ {id:'chromosome',name:'Хромосоми',fn:'Несуть спадкову інформацію — гени; забезпечують її передачу під час поділу клітини.',st:'Довгі нитки хроматину з ділянками ДНК та білків гістонів; у складі ядра.'}
+];
+var CHECK='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kimi-color-positive)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 10 18 20 6.5"/></svg>';
+var board=document.getElementById('cgBoard'),scoreEl=document.getElementById('cgScore'),
+    fill=document.getElementById('cgFill'),winEl=document.getElementById('cgWin'),
+    matched=0,selChip=null;
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function icon(id){return '<svg width="40" height="28" viewBox="0 0 40 28">'+ICONS[id]+'</svg>'}
+function build(){
+ matched=0;selChip=null;winEl.className='win';scoreEl.textContent='0 / '+ORG.length;fill.style.width='0%';
+ board.innerHTML='';
+ var parts=document.createElement('div');parts.className='parts';
+ parts.innerHTML='<div class="sec-h">Назви</div>';
+ shuffle(ORG.slice()).forEach(function(o){
+   var c=document.createElement('div');c.className='chip';c.textContent=o.name;c.dataset.org=o.id;c.draggable=true;
+   c.addEventListener('dragstart',function(e){e.dataTransfer.setData('text/plain',o.id);c.classList.add('ghost')});
+   c.addEventListener('dragend',function(){c.classList.remove('ghost')});
+   c.addEventListener('click',function(){
+     if(c.classList.contains('sel')){c.classList.remove('sel');selChip=null}
+     else{document.querySelectorAll('#cellgame .chip.sel').forEach(function(x){x.classList.remove('sel')});
+       c.classList.add('sel');selChip=o.id}
+   });
+   parts.appendChild(c);
+ });
+ board.appendChild(parts);
+ ['Функція','Будова','Зображення'].forEach(function(secTitle,si){
+   var col=document.createElement('div');col.className='col';
+   col.innerHTML='<div class="sec-h">'+secTitle+'</div>';
+   shuffle(ORG.slice()).forEach(function(o){
+     var b=document.createElement('div');b.className='blk';b.dataset.org=o.id;
+     var content = si===0?'<div class="txt">'+o.fn+'</div>': si===1?'<div class="txt">'+o.st+'</div>':'<div class="imgw">'+icon(o.id)+'</div>';
+     b.innerHTML='<div class="slot">+ назва</div>'+content;
+     b.addEventListener('dragover',function(e){e.preventDefault();if(!b.classList.contains('done'))b.classList.add('over')});
+     b.addEventListener('dragleave',function(){b.classList.remove('over')});
+     b.addEventListener('drop',function(e){e.preventDefault();b.classList.remove('over');attempt(e.dataTransfer.getData('text/plain'),b)});
+     b.addEventListener('click',function(){if(selChip&&!b.classList.contains('done'))attempt(selChip,b)});
+     col.appendChild(b);
+   });
+   board.appendChild(col);
+ });
+}
+function attempt(orgId,blk){
+ if(blk.classList.contains('done'))return;
+ if(orgId===blk.dataset.org){
+   blk.classList.add('done');
+   blk.querySelector('.slot').innerHTML=CHECK+'<span>'+ORG.find(function(o){return o.id===orgId}).name+'</span>';
+   var chip=board.querySelector('.chip[data-org="'+orgId+'"]');
+   if(chip){chip.style.display='none'}
+   document.querySelectorAll('#cellgame .chip.sel').forEach(function(x){x.classList.remove('sel')});selChip=null;
+   matched++;scoreEl.textContent=matched+' / '+ORG.length;
+   fill.style.width=(matched/ORG.length*100)+'%';
+   if(matched===ORG.length)winEl.className='win show';
+ }else{
+   blk.classList.add('shake');
+   var chip2=board.querySelector('.chip[data-org="'+orgId+'"]');
+   if(chip2){chip2.classList.add('shake');setTimeout(function(){chip2.classList.remove('shake')},400)}
+   setTimeout(function(){blk.classList.remove('shake')},400);
+ }
+}
+document.getElementById('cgReset').addEventListener('click',build);
+build();
+})();
+</script>
+</div>
+</body>
+</html>
